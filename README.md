@@ -209,6 +209,30 @@ int bucketAdd(hashTbl_t* hashtbl, bucket_t** list, char* name){
 }
 ```
 
+Первоначально, была проведена попытка ускорить второй вызов `memcpy`:
+
+```c++
+  int bucketAdd(hashTbl_t* hashtbl, bucket_t** list, char* name){
+    if (listFind(hashtbl, *list, name)) return OK;
+
+    bucket_t* old_list = *list;
+
+    *list = (bucket_t*)calloc(1, sizeof(bucket_t));
+
+    asm(".intel_syntax noprefix\n\t"
+        "vmovups ymm0, ymmword ptr [rdi]\n\t"
+        "vmovups ymmword ptr [rsi], ymm0\n\t"
+        ".att_syntax prefix\n\t"
+        :
+        : "D"(name), "S"((*list)->name)
+        : "ymm0"
+        );
+
+    (*list)->next = old_list;
+
+    return OK;
+}
+```
 
 ```c++
 ...
