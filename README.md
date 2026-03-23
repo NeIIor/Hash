@@ -89,12 +89,12 @@ uint calcHash(char* name, uint prevHash){
 Воспользуемся, например, профилировщиком `valgrind` с утилитой `callgrind` и графической оболочкой для просмотра результатов `kachegrind`, результаты здесь и далее отсортированны по показателю `self`:
 
 # Картинка v1
-<img src="/_pictures-readme/v1_val.png" width="800">
+<img src="_pictures-readme/v1_val.png" width="800">
 
 
 # Картинка v1_O3
-<img src="/_pictures-readme/v1_O3_val.jpg" width="800">
-<img src="/_pictures-readme/v1_O3_perf.jpg" width="600">
+<img src="_pictures-readme/v1_O3_val.jpg" width="800">
+<img src="_pictures-readme/v1_O3_perf.jpg" width="600">
 
 Можно заметить, что процент времени занимаемый функциями `hashTableAdd` и `hashTableFind` сильно возрос, а `countHash` пропала вовсе, это происходит из-за инлайнинга функции расчёта хэша в них. Получается, самая используемая функция это `countHash` (не особо и удивительно). Перепишем её используя `intrinsic`-функции:
 
@@ -124,8 +124,8 @@ unsigned long long calcHash(char* name){
 Результаты ожидаемые, найдём следующее узкое место в программе.
 
 # Картинка v2_O3
-<img src="/_pictures-readme/v2_O3_val.jpg" width="800">
-<img src="/_pictures-readme/v2_O3_perf.jpg" width="600">
+<img src="_pictures-readme/v2_O3_val.jpg" width="800">
+<img src="_pictures-readme/v2_O3_perf.jpg" width="600">
 
 Видим, что время работы программы ускорилось в 3 раза, а доля `strncmp` возросла в ~7 раз - выбор был сделан верный, тут же отчётливо видно следующее место для оптимизации. Так как нам не нужен полный функционал `strncmp`, а нам нужно знать равны ли две строки между собой, покопаемся в [intel intrinsics guide](https://www.laruence.com/sse/#cats=Compare&techs=AVX,AVX2&expand=900) и найдём нужную нам SIMD-инструкцию.
 
@@ -152,15 +152,15 @@ egcmp:
 Посмотрим на результаты такого урезания `strncmp` под нашу задачу.
 
 # Картинка v3_O3
-<img src="/_pictures-readme/v3_O3_val.jpg" width="800">
+<img src="_pictures-readme/v3_O3_val.jpg" width="800">
 
 Для проверки воспользуемся `perf`'ом.
 
 # Картинка v3_O3
-<img src="/_pictures-readme/v3_O3_perf.jpg" width="600">
+<img src="_pictures-readme/v3_O3_perf.jpg" width="600">
 
 # Картинка v3_O3
-<img src="/_pictures-readme/v3_O3_annotate.jpg" width="400">
+<img src="_pictures-readme/v3_O3_annotate.jpg" width="400">
 
 
 В основном результаты профилировщиков коррелируют между собой, однако при записи этих данных у `perf`'а наблюдался некоторый разброс в показаниях. Это связано с механизмом работы самого профилировщика. А вот результаты измерений времени:
@@ -270,26 +270,26 @@ strlen_memcpy:
 | Погрешность       |  0,01    |    0,01    |0,03           | 0,01          |0,01          |
 
 # Картинка v4_O3
-<img src="/_pictures-readme/v4_O3_val.jpg" width="800">
+<img src="_pictures-readme/v4_O3_val.jpg" width="800">
 
 Исходя из репорта `valgrind`'а можно сделать немало выводов, например, функция `hashTableAdd` теперь заинлайнена в `textParse`, время занятое неким `0x0..01360` сильно увеличилось, как и количество обращений к этому адресу, воспользуеся `perf`'ом для разъяснения ситуации.
 
 # Картинка perf1
-<img src="/_pictures-readme/v4_O3_perf1.jpg" width="600">
+<img src="_pictures-readme/v4_O3_perf1.jpg" width="600">
 
 
 # Картинка perf2
-<img src="/_pictures-readme/v4_O3_perf2.jpg" width="600">
+<img src="_pictures-readme/v4_O3_perf2.jpg" width="600">
 
 Даже на этих двух отчётах видно, что частоты "скринов" `perf`'а в 100кГц (максимальная частота) не хватает для абсолютно точного получения данных. Итак, `hashTableAdd` и правда пропал с радаров(2) и был заинлайнен, однако, достаточной информации по эффективности `strlen_memcpy` собрать сложно, так как нам не хватает точности `perf`'а, если сравнивать результаты `valgrind`'а с `perf`'ом, то я считаю, `valgrind` ближее к правде - мы избавились от `memcpy` и `strlen` на ~4%, но появился `0x0..01d70` на ~1%, которым, в теории и должен быть наш `strlen_memcpy`. Итого, разница между ними ~3%, что сходится с экспериментальными данными. Это можно подтвердить или опровергнуть используя дизассемблер.
 
 # Вот собственно и скрин из IDA
-<img src="/_pictures-readme/IDA1.jpg" width="800">
+<img src="_pictures-readme/IDA1.jpg" width="800">
 
 Скрин подтверждает, что это и был наш `strlen_memcpy`, также можно подтвердить, что по адресу `0x1360` лежит `egcmp`.
 
 # egcmp IDA
-<img src="/_pictures-readme/IDA2.jpg" width="800">
+<img src="_pictures-readme/IDA2.jpg" width="800">
 
 ## Результаты и выводы.
 
@@ -311,6 +311,4 @@ strlen_memcpy:
 - [Гайд по perf'у.](https://habr.com/ru/companies/first/articles/442738/)
 - [Инфа по inline-ассемблеру №1.](https://dmalcolm.fedorapeople.org/gcc/2015-08-31/rst-experiment/how-to-use-inline-assembly-language-in-c-code.html#local-reg-vars)
 - [Инфа по inline-ассемблеру №2.](https://www.ibiblio.org/gferg/ldp/GCC-Inline-Assembly-HOWTO.html)
-# hash
-# hash
-# hash
+

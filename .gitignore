@@ -1,0 +1,12 @@
+# Сборка
+/main
+/main_v1
+/main_v2
+/bin/
+*.o
+
+# Профилирование
+perf.data
+perf.data.old
+**/perf.data
+**/perf.data.old
